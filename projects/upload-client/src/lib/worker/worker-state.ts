@@ -14,6 +14,7 @@ interface InternalUpload extends UploadStatus {
   partSize: number;
   failedDispatch: boolean;
   abortController: AbortController;
+  nextPartToDispatch: number;
 }
 
 interface PortInfo {
@@ -26,7 +27,6 @@ const HEARTBEAT_INTERVAL_MS = 120_000;
 
 export class WorkerState {
   private uploads = new Map<string, InternalUpload>();
-  private partQueue: { uploadId: string; partNumber: number }[] = [];
   private inFlight = 0;
   private maxConcurrentParts = 6;
   private serverUrl = '';
@@ -121,13 +121,11 @@ export class WorkerState {
         partSize: init.partSize,
         failedDispatch: false,
         abortController: new AbortController(),
+        nextPartToDispatch: 1,
       };
       this.uploads.set(uploadId, status);
       this.send(port, { type: 'uploadAdded', requestId: msg.requestId, uploadId });
       this.broadcastUpdate(uploadId);
-      for (let p = 1; p <= init.totalParts; p++) {
-        this.partQueue.push({ uploadId, partNumber: p });
-      }
       this.pump();
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -136,16 +134,26 @@ export class WorkerState {
   }
 
   private pump(): void {
-    while (this.inFlight < this.maxConcurrentParts && this.partQueue.length > 0) {
-      const job = this.partQueue.shift()!;
-      const upload = this.uploads.get(job.uploadId);
-      if (!upload || upload.failedDispatch) continue;
+    while (this.inFlight < this.maxConcurrentParts) {
+      const upload = this.pickNextDispatch();
+      if (!upload) return;
+      const partNumber = upload.nextPartToDispatch++;
       this.inFlight++;
-      void this.runPart(job.uploadId, job.partNumber).finally(() => {
+      void this.runPart(upload.uploadId, partNumber).finally(() => {
         this.inFlight--;
         this.pump();
       });
     }
+  }
+
+  private pickNextDispatch(): InternalUpload | undefined {
+    let best: InternalUpload | undefined;
+    for (const u of this.uploads.values()) {
+      if (u.failedDispatch) continue;
+      if (u.nextPartToDispatch > u.totalParts) continue;
+      if (!best || u.inFlightParts < best.inFlightParts) best = u;
+    }
+    return best;
   }
 
   private async runPart(uploadId: string, partNumber: number): Promise<void> {
@@ -203,7 +211,6 @@ export class WorkerState {
     }
     upload.status = 'cancelled';
     upload.failedDispatch = true;
-    this.partQueue = this.partQueue.filter((j) => j.uploadId !== uploadId);
     upload.abortController.abort();
     void cancelUploadOnServer(this.serverUrl, uploadId);
     this.broadcastUpdate(uploadId);

@@ -29,13 +29,32 @@ export async function putPart(
   blob: Blob,
   signal?: AbortSignal
 ): Promise<void> {
+  const buffer = await blob.arrayBuffer();
+  const digest = await crypto.subtle.digest('SHA-256', buffer);
+  const checksum = base64FromBuffer(digest);
   const res = await fetch(uploadUrl, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/octet-stream' },
-    body: blob,
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'x-checksum-sha256': checksum,
+    },
+    body: buffer,
     signal,
   });
   if (!res.ok) throw new Error(`PUT part failed: HTTP ${res.status}`);
+}
+
+function castAsModernUint8Array(uint8Array: Uint8Array) {
+  return uint8Array as unknown as (Uint8Array & {"toBase64": () => string});
+}
+
+function base64FromBuffer(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  
+  // only need this until Typscript 6 (i.e. Angular 22)
+  const modernBytes = bytes as (Uint8Array & {"toBase64": () => string});
+
+  return modernBytes.toBase64() as string;
 }
 
 export async function cancelUpload(serverUrl: string, fileId: string): Promise<void> {

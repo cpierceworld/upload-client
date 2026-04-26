@@ -6,5 +6,5 @@ export {
 } from './lib/tokens';
 export { UploadService } from './lib/upload.service';
 export { type UploadStatus, type UploadStatusValue } from './lib/upload-status';
-export { UploadProgressComponent } from './lib/components/upload-progress.component';
-export { UploadsListComponent } from './lib/components/uploads-list.component';
+export { UploadProgressComponent } from './lib/components/upload-progress/upload-progress.component';
+export { UploadsListComponent } from './lib/components/uploads-list/uploads-list.component';

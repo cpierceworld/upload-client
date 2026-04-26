@@ -1,0 +1,43 @@
+<div class="upload-row">
+  <div class="meta">
+    <span class="name">{{ upload().fileName }}</span>
+    <span class="size">({{ sizeMb() }} MB)</span>
+    <span
+      class="status"
+      [class.failed]="upload().status === 'failed'"
+      [class.cancelled]="upload().status === 'cancelled'"
+    >
+      [{{ upload().status }}]
+    </span>
+    @if(upload().status !== 'queued') {
+      <span class="pct">
+        {{ upload().progressPercent }}%
+      </span>
+    }
+    @if(upload().totalParts > 0) {
+      <span class="parts">
+        {{ upload().completedParts }}/{{ upload().totalParts }} parts
+      </span>
+    }
+    <span class="client">client: {{ upload().clientId }}</span>
+    @if(canCancel()) {
+      <button
+        mat-icon-button
+        class="cancel-btn"
+        aria-label="Cancel upload"
+        (click)="cancel.emit(upload().uploadId)"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    }
+  </div>
+  <mat-progress-bar [mode]="barMode()" [value]="upload().progressPercent"></mat-progress-bar>
+  @if(upload().sha256) {
+    <div class="hash">
+      sha256: {{ upload().sha256!.slice(0, 16) }}…
+    </div>
+  }
+  @if(upload().error) {
+    <div class="err">error: {{ upload().error }}</div>
+  }
+</div>

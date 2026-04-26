@@ -1,0 +1,10 @@
+@if(uploads()?.length) {
+  @for(u of uploads(); track u.uploadId) {
+    <lib-upload-progress
+      [upload]="u"
+      (cancel)="cancel.emit($event)"
+    ></lib-upload-progress>
+  }
+} @else {
+  <p class="empty">{{ emptyText() }}</p>
+}
