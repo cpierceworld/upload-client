@@ -1,59 +1,68 @@
-# UploadMockClient
+# upload-client
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.24.
+Angular 19 + Material 19 file-upload library with a long-lived (Shared or Dedicated) Web Worker and per-upload `clientKey` tagging. Sibling `test-app` is included for live development against the mock server in `../upload-mock-server2`.
 
-## Development server
-
-To start a local development server, run:
+## Quickstart
 
 ```bash
-ng serve
+npm install
+npm run dev
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+This starts (concurrently):
 
-## Code scaffolding
+- `dev:lib` — `ng build upload-client --watch` (incremental rebuild on save)
+- `dev:app` — `ng serve test-app --port 4200`
+- `dev:mock` — `npm --prefix ../upload-mock-server2 run dev` (Express on port 4000)
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Open <http://localhost:4200>.
 
-```bash
-ng generate component component-name
+## Test-app query params
+
+- `?clientId=<id>` — sets the per-frame client identity (defaults to `main-<random>`).
+- The iframe panel spawns nested frames each with their own `clientId` (e.g. `iframe-1`); those frames render the same app, including their own iframe panel, so you can build arbitrary depth.
+
+## Library API
+
+```ts
+import { provideUploadClient, UploadService } from 'upload-client';
+
+provideUploadClient({
+  clientId: 'app-main',
+  serverUrl: 'http://localhost:4000',
+  workerMode: 'shared',          // or 'dedicated'; 'shared' auto-falls-back to dedicated
+  maxConcurrentParts: 6,
+  defaultClientKey: 'app-main',  // tag applied to uploads when caller omits clientKey
+  eviction: { ttlMs: 5 * 60_000, maxTerminal: 200 },
+});
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+```ts
+const svc = inject(UploadService);
 
-```bash
-ng generate --help
+svc.upload(file, { clientKey: 'sectionA' }).subscribe(/* status events */);
+svc.cancelUpload(uploadId);
+svc.retryUpload(uploadId);
+
+svc.myUploads$;                      // uploads owned by this clientId
+svc.allUploads$;                     // all uploads visible to this Service's worker
+svc.uploadsByKey$('sectionA');       // myUploads filtered by clientKey
 ```
 
-## Building
+## Worker modes
 
-To build the project run:
+- **shared** (default) — one `SharedWorker` per origin. All frames on the same origin see each other's uploads in `allUploads$`. Required for the cross-tab use case.
+- **dedicated** — each `UploadService` owns a private `Worker`.
+- Auto-fallback: if `workerMode: 'shared'` is requested but `SharedWorker` is undefined (older Safari, some embedded contexts), the service constructs a dedicated worker and logs a warning.
 
-```bash
-ng build
-```
+## Memory bounds
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Terminal uploads (`complete` / `failed` / `cancelled`) are evicted on a 30s tick:
 
-## Running unit tests
+- Drop entries older than `eviction.ttlMs`.
+- If terminal-entry count still exceeds `eviction.maxTerminal`, drop the oldest by termination time.
+- In-flight uploads are never evicted.
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+## Mock server
 
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+See `../upload-mock-server2/openapi.yaml` for the wire spec. Port 4000 by default.

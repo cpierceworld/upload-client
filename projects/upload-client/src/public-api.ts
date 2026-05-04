@@ -3,6 +3,9 @@ export {
   UPLOAD_CLIENT_CONFIG,
   type UploadClientConfig,
   type ResolvedUploadClientConfig,
+  type WorkerMode,
+  type EvictionConfig,
+  type AlternativeUploadConfig,
 } from './lib/tokens';
 export { UploadService } from './lib/upload.service';
 export { type UploadStatus, type UploadStatusValue } from './lib/upload-status';

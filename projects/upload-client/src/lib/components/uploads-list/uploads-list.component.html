@@ -1,8 +1,9 @@
-@if(uploads()?.length) {
-  @for(u of uploads(); track u.uploadId) {
+@if(displayed().length) {
+  @for(u of displayed(); track u.uploadId) {
     <lib-upload-progress
       [upload]="u"
       (cancel)="cancel.emit($event)"
+      (retry)="retry.emit($event)"
     ></lib-upload-progress>
   }
 } @else {

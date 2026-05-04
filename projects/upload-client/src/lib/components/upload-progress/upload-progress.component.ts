@@ -16,12 +16,23 @@ import { UploadStatus } from '../../upload-status';
 export class UploadProgressComponent {
   readonly upload = input.required<UploadStatus>();
   readonly cancel = output<string>();
+  readonly retry = output<string>();
+
+  readonly canRetry = computed(
+    () => this.upload().kind === 'standard' && this.upload().status === 'failed'
+  );
 
   readonly sizeMb = computed(() => (this.upload().fileSize / 1024 / 1024).toFixed(2));
 
   readonly canCancel = computed(() => {
     const s = this.upload().status;
-    return s === 'queued' || s === 'initiating' || s === 'uploading' || s === 'completing';
+    return (
+      s === 'queued' ||
+      s === 'initiating' ||
+      s === 'uploading' ||
+      s === 'completing' ||
+      s === 'processing'
+    );
   });
 
   readonly barMode = computed<ProgressBarMode>(() => {
@@ -31,6 +42,8 @@ export class UploadProgressComponent {
       case 'initiating':
       case 'completing':
         return 'query';
+      case 'processing':
+        return 'indeterminate';
       default:
         return 'determinate';
     }

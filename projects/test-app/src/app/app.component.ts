@@ -37,15 +37,29 @@ import { IframePanelComponent } from './iframe-panel.component';
               #picker
               (change)="filesSelected.set(!!picker.files?.length)"
             />
+            <label>
+              key:
+              <select #keySel>
+                <option value="A" selected>A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+              </select>
+            </label>
             <button
               mat-raised-button
               color="primary"
-              (click)="upload(picker.files); picker.value = ''; filesSelected.set(false)"
+              (click)="upload(picker.files, keySel.value); picker.value = ''; filesSelected.set(false)"
               [disabled]="!filesSelected()"
             >
               Upload
             </button>
           </div>
+
+          <h3>Section A only (filtered by clientKey)</h3>
+          <lib-uploads-list
+            [uploads]="sectionA()"
+            (cancel)="onCancel($event)"
+          ></lib-uploads-list>
 
           <div class="toggle">
             <mat-slide-toggle
@@ -64,7 +78,7 @@ import { IframePanelComponent } from './iframe-panel.component';
         </mat-card-content>
       </mat-card>
 
-      <app-iframe-panel *ngIf="!isIframe"></app-iframe-panel>
+      <app-iframe-panel></app-iframe-panel>
     </div>
   `,
   styles: [
@@ -88,11 +102,12 @@ export class AppComponent {
   private readonly mine = toSignal(this.svc.myUploads$, { initialValue: [] });
   private readonly all = toSignal(this.svc.allUploads$, { initialValue: [] });
   readonly visibleUploads = computed(() => (this.showAll() ? this.all() : this.mine()));
+  readonly sectionA = toSignal(this.svc.uploadsByKey$('A'), { initialValue: [] });
 
-  upload(files: FileList | null): void {
+  upload(files: FileList | null, clientKey: string): void {
     if (!files) return;
     for (const f of Array.from(files)) {
-      this.svc.upload(f).subscribe({
+      this.svc.upload(f, { clientKey }).subscribe({
         error: (err) => console.error(`upload failed for ${f.name}`, err),
       });
     }

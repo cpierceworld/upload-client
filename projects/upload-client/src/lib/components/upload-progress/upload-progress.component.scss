@@ -49,6 +49,22 @@
   margin-left: auto;
 }
 
+.key-chip {
+  background: rgba(63, 81, 181, 0.1);
+  color: #3f51b5;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+.retry-btn {
+  font-size: 11px;
+  min-width: 0;
+  padding: 0 8px;
+  line-height: 24px;
+  height: 24px;
+}
+
 .cancel-btn {
   width: 32px;
   height: 32px;

@@ -6,7 +6,11 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "dev": "concurrently -k -n lib,app,mock -c blue,green,magenta \"npm:dev:lib\" \"npm:dev:app\" \"npm:dev:mock\"",
+    "dev:lib": "ng build upload-client --watch --configuration development",
+    "dev:app": "ng serve test-app --port 4200",
+    "dev:mock": "npm --prefix ../upload-mock-server2 run dev"
   },
   "private": true,
   "dependencies": {
@@ -20,6 +24,7 @@
     "@angular/platform-browser": "^19.2.0",
     "@angular/platform-browser-dynamic": "^19.2.0",
     "@angular/router": "^19.2.0",
+    "hash-wasm": "^4.12.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
@@ -29,6 +34,7 @@
     "@angular/cli": "^19.2.24",
     "@angular/compiler-cli": "^19.2.0",
     "@types/jasmine": "~5.1.0",
+    "concurrently": "^9.1.0",
     "jasmine-core": "~5.6.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",

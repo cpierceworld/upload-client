@@ -9,7 +9,7 @@
     >
       [{{ upload().status }}]
     </span>
-    @if(upload().status !== 'queued') {
+    @if(upload().status !== 'queued' && upload().status !== 'processing') {
       <span class="pct">
         {{ upload().progressPercent }}%
       </span>
@@ -20,6 +20,17 @@
       </span>
     }
     <span class="client">client: {{ upload().clientId }}</span>
+    <span class="key-chip">key: {{ upload().clientKey }}</span>
+    @if(canRetry()) {
+      <button
+        mat-stroked-button
+        class="retry-btn"
+        aria-label="Retry upload"
+        (click)="retry.emit(upload().uploadId)"
+      >
+        Retry
+      </button>
+    }
     @if(canCancel()) {
       <button
         mat-icon-button
@@ -32,11 +43,6 @@
     }
   </div>
   <mat-progress-bar [mode]="barMode()" [value]="upload().progressPercent"></mat-progress-bar>
-  @if(upload().sha256) {
-    <div class="hash">
-      sha256: {{ upload().sha256!.slice(0, 16) }}…
-    </div>
-  }
   @if(upload().error) {
     <div class="err">error: {{ upload().error }}</div>
   }

@@ -3,6 +3,7 @@ export type UploadStatusValue =
   | 'initiating'
   | 'uploading'
   | 'completing'
+  | 'processing'
   | 'complete'
   | 'failed'
   | 'cancelled';
@@ -10,6 +11,8 @@ export type UploadStatusValue =
 export interface UploadStatus {
   uploadId: string;
   clientId: string;
+  clientKey: string;
+  kind: 'standard' | 'custom';
   fileName: string;
   fileSize: number;
   status: UploadStatusValue;
@@ -18,7 +21,7 @@ export interface UploadStatus {
   inFlightParts: number;
   bytesUploaded: number;
   progressPercent: number;
-  sha256?: string;
+  etag?: string;
   error?: string;
   createdAt: number;
 }
